@@ -7,13 +7,14 @@ using UnityEngine.InputSystem;
 public class PlayerMovements : MonoBehaviour
 {
   [Header("移動スピード設定")]
-  public float walkSpeed = 5.0f;
-  public float fastSpeed = 8.0f;
-  public float crouchSpeed = 3.5f;
+  public float walkSpeed = 11.0f;
+  public float fastSpeed = 16.0f;
+  public float crouchSpeed = 5.0f;
 
   [Header("重力設定")]
   public float gravity = -9.81f;
   private float verticalVelocity = 0f;
+  public float jumpHeight = 0.5f;
 
   [Header("姿勢(頭の高さ)設定")]
   public float standingHeight = 1.7f;
@@ -86,10 +87,14 @@ public class PlayerMovements : MonoBehaviour
     right.y = 0f;
     UnityEngine.Vector3 moveDir = (forward.normalized * moveZ + right.normalized * moveX).normalized;
 
-    // 重力の処理
+        // 重力とジャンプの処理
     if (controller.isGrounded)
     {
       verticalVelocity = -0.5f;
+      if (Keyboard.current.spaceKey.wasPressedThisFrame && !isCrouching)
+      {
+        verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity); // jumpHeight の高さまで跳ぶ
+      }
     }
     else
     {
