@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -16,6 +17,16 @@ using UnityEngine;
 /// 使い方: シーンの空オブジェクトに付け、head に CenterEyeAnchor、
 ///         body に PlayerBodyCollider のオブジェクトを入れる。
 /// </summary>
+/// <summary>
+/// ログ（track.csv）に列を追加したいスクリプトが実装するインターフェース。
+/// 例: SmokeExposure が「煙層の高さ・頭の位置の煙の濃さ・症状の段階」を追加する。
+/// </summary>
+public interface IEvacLogColumns
+{
+    string LogHeader { get; }   // "a,b,c"
+    string LogValues { get; }   // "1,2,3"（LogHeader と同じ数）
+}
+
 public class EvacuationTrajectoryLogger : MonoBehaviour
 {
     public static EvacuationTrajectoryLogger Instance { get; private set; }
@@ -49,6 +60,8 @@ public class EvacuationTrajectoryLogger : MonoBehaviour
     float currentSignSince;
     bool currentSignReported;
 
+    readonly RaycastHit[] hits = new RaycastHit[16];
+    readonly List<IEvacLogColumns> extraColumns = new List<IEvacLogColumns>();
     static readonly CultureInfo IC = CultureInfo.InvariantCulture;
 
     void Awake()
@@ -64,10 +77,14 @@ public class EvacuationTrajectoryLogger : MonoBehaviour
         m.onSessionStarted.AddListener(BeginRecording);
         m.onSessionFinished.AddListener(t => EndRecording("goal", t));
         m.onSessionTimedOut.AddListener(() => EndRecording("timeout", m.ElapsedTime));
+
+        // StartZone が OnSceneLoad モードだと、このStartより先に計測が始まっている場合がある
+        if (m.State == EvacuationState.Running) BeginRecording();
     }
 
     void BeginRecording()
     {
+        if (recording) return;
         var m = EvacuationSessionManager.Instance;
         string dir = Path.Combine(Application.persistentDataPath, "EvacLogs");
         Directory.CreateDirectory(dir);
@@ -77,7 +94,12 @@ public class EvacuationTrajectoryLogger : MonoBehaviour
         eventsPath = Path.Combine(dir, baseName + "_events.csv");
 
         track.Clear();
-        track.AppendLine("t,pos_x,pos_y,pos_z,head_y,yaw_deg,pitch_deg,gaze_x,gaze_y,gaze_z,speed_mps,gaze_target,gaze_sign_id,gaze_sign_design,gaze_dist");
+        extraColumns.Clear();
+        foreach (var mb in FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
+            if (mb is IEvacLogColumns c && mb.isActiveAndEnabled) extraColumns.Add(c);
+        track.Append("t,pos_x,pos_y,pos_z,head_y,yaw_deg,pitch_deg,gaze_x,gaze_y,gaze_z,speed_mps,gaze_target,gaze_sign_id,gaze_sign_design,gaze_dist");
+        foreach (var c in extraColumns) track.Append(',').Append(c.LogHeader);
+        track.AppendLine();
         events.Clear();
         events.AppendLine("t,event,id,detail,pos_x,pos_z");
 
@@ -133,13 +155,19 @@ public class EvacuationTrajectoryLogger : MonoBehaviour
         string targetName = "", signId = "", signDesign = "";
         float dist = -1f;
         GuideSignAOI sign = null;
-        if (Physics.Raycast(head.position, fwd, out RaycastHit hit, gazeRayDistance, gazeLayers, QueryTriggerInteraction.Collide))
+        // トリガーも拾うが、看板(AOI)以外のトリガー（Start/Goal/分岐点ゾーン）は透過させる
+        int n = Physics.RaycastNonAlloc(head.position, fwd, hits, gazeRayDistance, gazeLayers, QueryTriggerInteraction.Collide);
+        float best = float.MaxValue;
+        for (int i = 0; i < n; i++)
         {
-            targetName = hit.collider.gameObject.name;
-            dist = hit.distance;
-            sign = hit.collider.GetComponentInParent<GuideSignAOI>();
-            if (sign != null) { signId = sign.signId; signDesign = sign.designType; }
+            var h = hits[i];
+            if (h.distance >= best || h.collider.transform.IsChildOf(body != null ? body : head)) continue;
+            var s = h.collider.GetComponentInParent<GuideSignAOI>();
+            if (h.collider.isTrigger && s == null) continue;
+            best = h.distance; sign = s;
+            targetName = h.collider.gameObject.name; dist = h.distance;
         }
+        if (sign != null) { signId = sign.signId; signDesign = sign.designType; }
         UpdateSignFixation(sign, t);
 
         track.Append(t.ToString("F3", IC)).Append(',')
@@ -149,7 +177,9 @@ public class EvacuationTrajectoryLogger : MonoBehaviour
              .Append(F(fwd.x)).Append(',').Append(F(fwd.y)).Append(',').Append(F(fwd.z)).Append(',')
              .Append(F(speed)).Append(',')
              .Append(Csv(targetName)).Append(',').Append(Csv(signId)).Append(',').Append(Csv(signDesign)).Append(',')
-             .Append(F(dist)).AppendLine();
+             .Append(F(dist));
+        foreach (var c in extraColumns) track.Append(',').Append(c.LogValues);
+        track.AppendLine();
 
         // 長時間のプレイでもデータを失わないよう、定期的に書き出す
         if (track.Length > 200_000) Flush();
