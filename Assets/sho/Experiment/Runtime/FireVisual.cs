@@ -18,7 +18,7 @@ public class FireVisual : MonoBehaviour
     {
         if (smoke == null) return;
         float s = smoke.smokeEnabled ? Mathf.Sqrt(Mathf.Clamp01(smoke.HRR / Mathf.Max(1f, fullHRR))) : 0f;
-        if (smoke.mode == SmokeLayerController.Mode.Linear && smoke.smokeEnabled) s = 0.6f;
+        if (smoke.mode != SmokeLayerController.Mode.FirePlume && smoke.smokeEnabled) s = 0.6f;
         if (flames != null)
         {
             var em = flames.emission;

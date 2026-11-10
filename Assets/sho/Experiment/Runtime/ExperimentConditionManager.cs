@@ -137,7 +137,7 @@ public class ExperimentConditionManager : MonoBehaviour
         string state = m != null ? m.State.ToString() : "-";
         string t = m != null ? m.ElapsedTime.ToString("F1") : "-";
         string smokeInfo = smokeController != null
-            ? $"煙層の高さ {smokeController.LayerHeightAboveFloor:F2} m / 減光係数 {smokeController.ExtinctionUpper:F2} 1/m / 見通し {smokeController.VisibilityUpper:F1} m"
+            ? $"煙 {smokeController.CurrentFloorName} 煙層の高さ {smokeController.LayerY:F2} / 減光係数 {smokeController.ExtinctionUpper:F2} 1/m / 見通し {smokeController.VisibilityUpper:F1} m"
             : "";
         GUI.Label(new Rect(10, 10, 900, 22), $"条件 {ConditionId}  状態 {state}  経過 {t}s   [1-5]誘導 [Q]煙なし [Alt+W]遅 [E]標準 [Alt+R]速");
         GUI.Label(new Rect(10, 30, 900, 22), smokeInfo);

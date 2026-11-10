@@ -118,9 +118,9 @@ public class SmokeExposure : MonoBehaviour, IEvacLogColumns
         bool running = m == null || m.State == EvacuationState.Running;
         float dt = Time.deltaTime;
 
-        HeadK = smoke.ExtinctionAt(head.position.y);
-        HeadCO = smoke.COAt(head.position.y);
-        bool nowIn = smoke.UpperWeight(head.position.y) > 0.5f;
+        HeadK = smoke.ExtinctionAt(head.position);
+        HeadCO = smoke.COAt(head.position);
+        bool nowIn = smoke.UpperWeight(head.position) > 0.5f;
         if (nowIn != InSmoke) LogEvent(nowIn ? "smoke_enter" : "smoke_exit", $"k={HeadK:F2};layer={smoke.LayerHeightAboveFloor:F2}");
         InSmoke = nowIn;
 
@@ -225,9 +225,12 @@ public class SmokeExposure : MonoBehaviour, IEvacLogColumns
         float d = Mathf.Max(cam.nearClipPlane * 1.5f, r.transform.localPosition.z);
         float h = 2f * d * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * margin;
         float w = h * Mathf.Max(1f, cam.aspect);
-        r.transform.localPosition = new Vector3(0f, 0f, d);
+        // カメラや親が拡大・変形されていても、見た目の大きさが合うように打ち消す
+        Vector3 ls = head.lossyScale;
+        float sx = Mathf.Max(1e-4f, Mathf.Abs(ls.x)), sy = Mathf.Max(1e-4f, Mathf.Abs(ls.y)), sz = Mathf.Max(1e-4f, Mathf.Abs(ls.z));
+        r.transform.localPosition = new Vector3(0f, 0f, d / sz);
         r.transform.localRotation = Quaternion.identity;
-        r.transform.localScale = new Vector3(w, h, 1f);
+        r.transform.localScale = new Vector3(w / sx, h / sy, 1f);
     }
 
     void Incapacitate()
@@ -281,8 +284,11 @@ public class SmokeExposure : MonoBehaviour, IEvacLogColumns
         get
         {
             var ic = CultureInfo.InvariantCulture;
-            float layer = smoke != null ? smoke.LayerHeightAboveFloor : -1f;
-            float hf = (head != null && smoke != null) ? head.position.y - smoke.floorY : -1f;
+            float layer = -1f;
+            if (smoke != null && head != null)
+                layer = (smoke.LayerYAt(head.position) - smoke.LocalFloorY(head.position.y)) / Mathf.Max(0.01f, smoke.worldUnitsPerMeter);
+            float hf = (head != null && smoke != null)
+                ? (head.position.y - smoke.LocalFloorY(head.position.y)) / Mathf.Max(0.01f, smoke.worldUnitsPerMeter) : -1f;
             return string.Join(",",
                 layer.ToString("F3", ic), HeadK.ToString("F3", ic), HeadCO.ToString("F0", ic), InSmoke ? "1" : "0",
                 Irritation.ToString("F3", ic), FED.ToString("F4", ic), Dose.ToString("F2", ic), Stage.ToString(ic), hf.ToString("F3", ic));

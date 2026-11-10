@@ -3300,13 +3300,13 @@ MonoBehaviour:
     centerXZ: {x: 9, y: 31.25}
     sizeXZ: {x: 2.5, y: 9.5}
     volume: {fileID: 643182371}
-  growth: 1
+  growth: 3
   maxHRR: 3000
   preburnSeconds: 30
   convectiveFraction: 0.7
   heatLossFraction: 0.7
   heatOfCombustion: 20000
-  sootYield: 0.05
+  sootYield: 0.03
   coYield: 0.04
   lowerLayerLeak: 0.03
   linearDelay: 0
