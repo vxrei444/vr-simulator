@@ -1,5 +1,10 @@
 ## エディター
 Unity 6000.0.77f1を使用
+モジュールのAndroid Build SupportとOpenJDKとAndroid SDK & NDK Toolsを追加すること。
+Microsoft Visual Studioは任意。
+VSCodeとか入っているなら代用
+
+GitHubDesktop使用推奨
 
 ## 作業ルール
 作業では必ず以下を守ってください。
