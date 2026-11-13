@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class DoorController : MonoBehaviour
+public class Sho_DoorController : MonoBehaviour
 {
     [Header("開閉設定")]
     public float openAngle = 110f;      // 開く角度

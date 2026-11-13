@@ -380,7 +380,7 @@ public static class TestSceneBuilder
         player.transform.position = new Vector3(0f, 0.86f, 0f);
         var cc = player.AddComponent<CharacterController>();
         cc.height = 1.7f; cc.radius = 0.3f; cc.stepOffset = 0.3f; cc.slopeLimit = 45f; cc.center = Vector3.zero;
-        var mv = player.AddComponent<PlayerMovements>();
+        var mv = player.AddComponent<Sho_PlayerMovements>();
         mv.walkSpeed = 1.4f;   // 実際の避難歩行速度に近い値（m/s）
         mv.fastSpeed = 2.5f;
         mv.crouchSpeed = 0.7f;
@@ -429,7 +429,7 @@ public static class TestSceneBuilder
         var go = new GameObject("EvacSession");
         var m = go.AddComponent<EvacuationSessionManager>();
         m.timeLimit = 180f;
-        var log = go.AddComponent<EvacuationTrajectoryLogger>();
+        var log = go.AddComponent<Sho_EvacuationTrajectoryLogger>();
         log.head = cam.transform;
         log.body = player.transform;
         cond = go.AddComponent<ExperimentConditionManager>();
@@ -457,7 +457,7 @@ public static class TestSceneBuilder
             Object.DestroyImmediate(go.GetComponent<Renderer>());
             GameObjectUtility.SetStaticEditorFlags(go, 0);
             go.GetComponent<Collider>().isTrigger = true;
-            var dp = go.AddComponent<DecisionPointZone>();
+            var dp = go.AddComponent<Sho_DecisionPointZone>();
             dp.pointId = id;
             dp.correctExitName = "toExit";
             var list = new List<Transform>();
@@ -616,7 +616,7 @@ public static class TestSceneBuilder
         flow.waypoints = wps.ToArray();
         flow.segmentMaterial = mChevron;
         flow.Rebuild();
-        var aoi = flowGo.AddComponent<GuideSignAOI>();
+        var aoi = flowGo.AddComponent<Sho_GuideSignAOI>();
         aoi.signId = "E_flow"; aoi.designType = "flowing_arrow";
         // 視線判定用の薄い当たり（トリガー）
         AoiStrip(flowGo.transform, new Vector3(0f, 0.03f, 13.4f), new Vector3(0.6f, 0.06f, 23.8f));
@@ -654,7 +654,7 @@ public static class TestSceneBuilder
         fb.pattern = FlashingBeacon.Pattern.Steady;
         fb.color = new Color(0.75f, 1f, 0.55f);
         fb.brightness = 1f;
-        var aoi = q.AddComponent<GuideSignAOI>();
+        var aoi = q.AddComponent<Sho_GuideSignAOI>();
         aoi.signId = q.name; aoi.designType = "floor_arrow";
     }
 
@@ -711,7 +711,7 @@ public static class TestSceneBuilder
             fb.offLevel = pattern == FlashingBeacon.Pattern.Steady ? 1f : 0.25f;
             fb.lightIntensity = 1.5f;
 
-            var aoi = q.AddComponent<GuideSignAOI>();
+            var aoi = q.AddComponent<Sho_GuideSignAOI>();
             aoi.signId = q.name; aoi.designType = design;
             k++;
         }

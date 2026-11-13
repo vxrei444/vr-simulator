@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 /// EvacuationSessionManager のイベントを使うので、GoalZone は書き換えなくてよい。
 /// シーンの空オブジェクト（例: SessionManager と同じオブジェクト）に付ける。
 /// </summary>
-public class GoToResultScene : MonoBehaviour
+public class Sho_GoToResultScene : MonoBehaviour
 {
     [Tooltip("移動先のシーン名（Build Profiles のシーンリストに入れておくこと）")]
     public string resultSceneName = "ResultScene";
@@ -28,7 +28,7 @@ public class GoToResultScene : MonoBehaviour
         var m = EvacuationSessionManager.Instance;
         if (m == null)
         {
-            Debug.LogError("[GoToResultScene] シーンに EvacuationSessionManager がありません");
+            Debug.LogError("[Sho_GoToResultScene] シーンに EvacuationSessionManager がありません");
             return;
         }
 

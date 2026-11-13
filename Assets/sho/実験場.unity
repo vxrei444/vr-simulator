@@ -4944,6 +4944,55 @@ Transform:
   - {fileID: 1828046507}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &207951584
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 207951586}
+  - component: {fileID: 207951585}
+  m_Layer: 0
+  m_Name: PerfMonitor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &207951585
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 207951584}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ddf3d57a3b70f9b4f80604a1fdb40f43, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  writeCsv: 1
+  smoke: {fileID: 1269005772}
+  sliceVisual: {fileID: 0}
+  volumeVisual: {fileID: 1111127082}
+  foveation: {fileID: 0}
+--- !u!4 &207951586
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 207951584}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &211243931
 GameObject:
   m_ObjectHideFlags: 0
@@ -20919,6 +20968,65 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!1 &1111127081
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1111127083}
+  - component: {fileID: 1111127082}
+  m_Layer: 0
+  m_Name: SmokeVolumeVisual
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1111127082
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1111127081}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d093488ef64ba3d4e95b7289acfd1515, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  smoke: {fileID: 1269005772}
+  volumeMaterial: {fileID: 2100000, guid: fd2807b66252ad04f95e28e8cd8ba20d, type: 2}
+  steps: 10
+  autoQuality: 1
+  targetFrameMs: 13.9
+  minSteps: 6
+  maxSteps: 14
+  insideSteps: 4
+  smokeColor: {r: 0.16, g: 0.15, b: 0.14, a: 1}
+  visualScale: 1
+  waveAmplitudeM: 0.35
+  blendM: 0.3
+  particleMaterial: {fileID: 2100000, guid: 7f007e56cc80b7a48be4b0678e069712, type: 2}
+  interfaceParticles: 1
+  particlesPerRegion: 40
+--- !u!4 &1111127083
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1111127081}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1115742642 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8049304671015000070, guid: 66acfd7802c797f4caf8cf82ef66faba, type: 3}
@@ -23904,15 +24012,15 @@ MonoBehaviour:
     centerXZ: {x: -97.10692, y: 10.50795}
     sizeXZ: {x: 277.20007, y: 135.78006}
     volume: {fileID: 782856827}
-  growth: 1
+  growth: 2
   maxHRR: 3000
-  preburnSeconds: 0
+  preburnSeconds: 60
   convectiveFraction: 0.7
   heatLossFraction: 0.7
   heatOfCombustion: 20000
   sootYield: 0.05
   coYield: 0.04
-  lowerLayerLeak: 0.05
+  lowerLayerLeak: 0.1
   floors:
   - name: 1F
     floorY: 0.5
@@ -23926,16 +24034,48 @@ MonoBehaviour:
     floorY: 26.499998
     ceilingY: 39.199997
     fillSeconds: 60
+  nextFloorStartFraction: 0.432
   floorGapSeconds: 7
+  fillCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 1.8
+      outSlope: 1.8
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0.25
+      outSlope: 0.25
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  initialDensity: 0.663
+  continueAfterSessionEnd: 1
+  spatialSpread: 1
+  smokeOrigin: {fileID: 0}
+  frontSpeedMps: 0.8
+  taperM: 0.5
   linearDelay: 0
   linearDuration: 150
   linearExtinction: 2.5
   linearCOppm: 400
+  useBoxVolumes: 0
   smokeVolumeMaterial: {fileID: 2100000, guid: dbe48824fcc6ae244a30753d3f840bf9, type: 2}
-  smokeColor: {r: 0.05, g: 0.05, b: 0.05, a: 0.78431374}
+  smokeColor: {r: 0.16, g: 0.15, b: 0.14, a: 1}
   fogScale: 0.58
   interfaceBlend: 0.2
-  baseFogDensity: 0.01
+  baseFogDensity: 0.25
   viewer: {fileID: 1916990906}
   interfaceParticles: {fileID: 0}
 --- !u!4 &1269005773
@@ -37602,7 +37742,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_RenderShadows: 1
-  m_RequiresDepthTextureOption: 2
+  m_RequiresDepthTextureOption: 1
   m_RequiresOpaqueTextureOption: 2
   m_CameraType: 0
   m_Cameras: []
@@ -40993,3 +41133,5 @@ SceneRoots:
   - {fileID: 949779048}
   - {fileID: 1269005773}
   - {fileID: 1716792996}
+  - {fileID: 1111127083}
+  - {fileID: 207951586}

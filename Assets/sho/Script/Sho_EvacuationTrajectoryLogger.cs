@@ -27,9 +27,9 @@ public interface IEvacLogColumns
     string LogValues { get; }   // "1,2,3"（LogHeader と同じ数）
 }
 
-public class EvacuationTrajectoryLogger : MonoBehaviour
+public class Sho_EvacuationTrajectoryLogger : MonoBehaviour
 {
-    public static EvacuationTrajectoryLogger Instance { get; private set; }
+    public static Sho_EvacuationTrajectoryLogger Instance { get; private set; }
 
     [Header("参照")]
     [Tooltip("OVRCameraRig > TrackingSpace > CenterEyeAnchor（未設定なら Main Camera）")]
@@ -56,7 +56,7 @@ public class EvacuationTrajectoryLogger : MonoBehaviour
     float lastSampleTime;
 
     // 看板注視の連続判定用
-    GuideSignAOI currentSign;
+    Sho_GuideSignAOI currentSign;
     float currentSignSince;
     bool currentSignReported;
 
@@ -154,7 +154,7 @@ public class EvacuationTrajectoryLogger : MonoBehaviour
 
         string targetName = "", signId = "", signDesign = "";
         float dist = -1f;
-        GuideSignAOI sign = null;
+        Sho_GuideSignAOI sign = null;
         // トリガーも拾うが、看板(AOI)以外のトリガー（Start/Goal/分岐点ゾーン）は透過させる
         int n = Physics.RaycastNonAlloc(head.position, fwd, hits, gazeRayDistance, gazeLayers, QueryTriggerInteraction.Collide);
         float best = float.MaxValue;
@@ -162,7 +162,7 @@ public class EvacuationTrajectoryLogger : MonoBehaviour
         {
             var h = hits[i];
             if (h.distance >= best || h.collider.transform.IsChildOf(body != null ? body : head)) continue;
-            var s = h.collider.GetComponentInParent<GuideSignAOI>();
+            var s = h.collider.GetComponentInParent<Sho_GuideSignAOI>();
             if (h.collider.isTrigger && s == null) continue;
             best = h.distance; sign = s;
             targetName = h.collider.gameObject.name; dist = h.distance;
@@ -185,7 +185,7 @@ public class EvacuationTrajectoryLogger : MonoBehaviour
         if (track.Length > 200_000) Flush();
     }
 
-    void UpdateSignFixation(GuideSignAOI sign, float t)
+    void UpdateSignFixation(Sho_GuideSignAOI sign, float t)
     {
         if (sign != currentSign)
         {
@@ -202,7 +202,7 @@ public class EvacuationTrajectoryLogger : MonoBehaviour
         }
     }
 
-    /// <summary>ほかのスクリプト（DecisionPointZone など）から任意のイベントを記録する</summary>
+    /// <summary>ほかのスクリプト（Sho_DecisionPointZone など）から任意のイベントを記録する</summary>
     public void LogEvent(string ev, string id, string detail = "")
     {
         if (!recording) return;

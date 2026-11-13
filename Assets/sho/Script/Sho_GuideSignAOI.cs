@@ -5,7 +5,7 @@ using UnityEngine;
 /// 視線レイがこのオブジェクトの Collider に当たると、ログに signId / designType が残る。
 /// Collider が無い看板には BoxCollider(isTrigger) を付けること（体の当たり判定に干渉しない）。
 /// </summary>
-public class GuideSignAOI : MonoBehaviour
+public class Sho_GuideSignAOI : MonoBehaviour
 {
     [Tooltip("看板ごとに一意なID（例: S01_2F_corridor）")]
     public string signId = "S01";

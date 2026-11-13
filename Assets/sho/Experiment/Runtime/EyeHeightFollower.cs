@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.XR;
 
 /// <summary>
-/// PC 操作（PlayerMovements）でしゃがんだとき、カメラ（目の高さ）も下げる。
+/// PC 操作（Sho_PlayerMovements）でしゃがんだとき、カメラ（目の高さ）も下げる。
 /// カメラに付ける。CharacterController の高さに合わせて目の位置を動かす。
 /// VR ヘッドセット使用中は、実際の頭の高さが使われるので何もしない。
 /// </summary>
