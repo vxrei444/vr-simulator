@@ -4,7 +4,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class PlayerMovements : MonoBehaviour
+public class Sho_PlayerMovements : MonoBehaviour
 {
   [Header("移動スピード設定")]
   public float walkSpeed = 11.0f;

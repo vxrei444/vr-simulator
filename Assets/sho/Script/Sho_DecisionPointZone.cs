@@ -7,7 +7,7 @@ using UnityEngine;
 /// 退出時に一番近い方向の名前が記録される。
 /// </summary>
 [RequireComponent(typeof(Collider))]
-public class DecisionPointZone : MonoBehaviour
+public class Sho_DecisionPointZone : MonoBehaviour
 {
     public string pointId = "DP01";
     public string playerTag = "Player";
@@ -28,19 +28,19 @@ public class DecisionPointZone : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if (!other.CompareTag(playerTag) || EvacuationTrajectoryLogger.Instance == null) return;
+        if (!other.CompareTag(playerTag) || Sho_EvacuationTrajectoryLogger.Instance == null) return;
         visitCount++;
         enterTime = Time.time;
-        EvacuationTrajectoryLogger.Instance.LogEvent("dp_enter", pointId, $"visit={visitCount}");
+        Sho_EvacuationTrajectoryLogger.Instance.LogEvent("dp_enter", pointId, $"visit={visitCount}");
     }
 
     void OnTriggerExit(Collider other)
     {
-        if (!other.CompareTag(playerTag) || EvacuationTrajectoryLogger.Instance == null) return;
+        if (!other.CompareTag(playerTag) || Sho_EvacuationTrajectoryLogger.Instance == null) return;
         string dir = NearestExit(other.transform.position);
         string ok = dir == correctExitName ? "correct" : "wrong";
         float dwell = Time.time - enterTime;
-        EvacuationTrajectoryLogger.Instance.LogEvent("dp_exit", pointId, $"dir={dir};{ok};dwell={dwell:F2};visit={visitCount}");
+        Sho_EvacuationTrajectoryLogger.Instance.LogEvent("dp_exit", pointId, $"dir={dir};{ok};dwell={dwell:F2};visit={visitCount}");
     }
 
     string NearestExit(Vector3 p)

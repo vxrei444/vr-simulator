@@ -71,7 +71,7 @@ public static class BuildingSmokeSetup
         }
 
         // ---- 2. 1m が何ユニットか（プレイヤーの目の高さ ÷ 1.6m） ----
-        var pm = Object.FindAnyObjectByType<PlayerMovements>();
+        var pm = Object.FindAnyObjectByType<Sho_PlayerMovements>();
         d.player = pm != null ? pm.gameObject : null;
         if (d.player == null)
         {
@@ -215,7 +215,7 @@ public static class BuildingSmokeSetup
             if (ex == null) ex = Undo.AddComponent<SmokeExposure>(player);
             ex.smoke = s;
             ex.head = cam.transform;
-            ex.movements = player.GetComponent<PlayerMovements>();
+            ex.movements = player.GetComponent<Sho_PlayerMovements>();
             ex.overlay = EnsurePlate(cam.transform, "SymptomVignette", Gen + "/SymptomVignette.mat", 0.12f);
             ex.blackout = EnsurePlate(cam.transform, "SymptomBlackout", Gen + "/SymptomBlackout.mat", 0.1f);
             exposureMsg = "\nPlayer に SmokeExposure（煙の症状）を付けました。";
