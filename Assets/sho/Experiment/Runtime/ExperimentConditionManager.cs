@@ -58,7 +58,7 @@ public class ExperimentConditionManager : MonoBehaviour
     IEnumerator LogConfigNextFrame()
     {
         yield return null; // ロガーの記録開始を待つ
-        var log = EvacuationTrajectoryLogger.Instance;
+        var log = Sho_EvacuationTrajectoryLogger.Instance;
         if (log == null) yield break;
         log.LogEvent("config_guidance", guidance.ToString(), DescribeGuidance());
         if (smokeController != null) log.LogEvent("config_smoke", smoke.ToString(), smokeController.Describe());

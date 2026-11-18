@@ -110,6 +110,16 @@ public class SmokeLayerController : MonoBehaviour
     [Tooltip("計測が終わった（ゴール・時間切れ・行動不能）後も煙を進め続ける")]
     public bool continueAfterSessionEnd = true;
 
+    [Header("煙の広がり（場所による違い）")]
+    [Tooltip("オンにすると、煙は火元（smokeOrigin）から広がり、遠い場所ほど遅れて・薄い層で届く（見た目と症状の両方に反映）")]
+    public bool spatialSpread = false;
+    [Tooltip("煙が広がり始める場所（火元）。未設定ならこのオブジェクトの位置")]
+    public Transform smokeOrigin;
+    [Tooltip("天井沿いに煙の先端が進む速さ [m/s]（天井流は 0.5〜1 m/s 程度）")]
+    public float frontSpeedMps = 0.8f;
+    [Tooltip("煙の先端付近で、煙層の下端が何 m 高い（薄い）か")]
+    public float taperM = 0.5f;
+
     [Header("直線降下（Linear / FloorByFloor モード共通）")]
     [Tooltip("スタートから煙が下がり始めるまでの秒数")]
     public float linearDelay = 0f;
@@ -121,6 +131,8 @@ public class SmokeLayerController : MonoBehaviour
     public float linearCOppm = 300f;
 
     [Header("見た目")]
+    [Tooltip("黒い半透明の箱で煙層を表示する（Sho_SmokeLayerVisual でリアルな見た目にするときはオフ）")]
+    public bool useBoxVolumes = true;
     [Tooltip("煙層の箱に使う材質（黒い半透明）")]
     public Material smokeVolumeMaterial;
     public Color smokeColor = new Color(0.05f, 0.05f, 0.05f, 1f);
@@ -156,7 +168,10 @@ public class SmokeLayerController : MonoBehaviour
 
     // ---- FloorByFloor の各階の状態（上の階から順） ----
     readonly List<FloorLevel> sorted = new List<FloorLevel>();
-    float[] fLayerY = new float[0], fK = new float[0], fCO = new float[0];
+    float[] fLayerY = new float[0], fK = new float[0], fCO = new float[0], fElapsed = new float[0];
+    float singleElapsed;
+    /// <summary>立体の霧の見た目（Sho_SmokeVolumeVisual）が煙層を描いているとき true（霧の二重がけを防ぐ）</summary>
+    [NonSerialized] public bool volumeVisualActive;
     bool[] fStarted = new bool[0];
     readonly Dictionary<string, Transform> floorVolumes = new Dictionary<string, Transform>();
 
@@ -242,7 +257,7 @@ public class SmokeLayerController : MonoBehaviour
     {
         if (!smokeEnabled)
         {
-            simT = t; FireTime = t; HRR = 0f; LayerHeightAboveFloor = ceilingHeight; ExtinctionUpper = 0f; COppmUpper = 0f;
+            simT = t; FireTime = t; HRR = 0f; LayerHeightAboveFloor = ceilingHeight; ExtinctionUpper = 0f; COppmUpper = 0f; singleElapsed = 0f;
             return;
         }
         if (mode == Mode.FloorByFloor)
@@ -254,6 +269,7 @@ public class SmokeLayerController : MonoBehaviour
         if (mode == Mode.Linear)
         {
             simT = t; FireTime = t;
+            singleElapsed = t - preburnSeconds - linearDelay;
             float u = Mathf.Clamp01((t - preburnSeconds - linearDelay) / Mathf.Max(1f, linearDuration));
             if (t - preburnSeconds < 0f) u = 0f;
             LayerHeightAboveFloor = Mathf.Lerp(ceilingHeight, minLayerHeight * Upm, u);
@@ -298,6 +314,7 @@ public class SmokeLayerController : MonoBehaviour
             simT += dt;
         }
         FireTime = simT;
+        singleElapsed = simT;
     }
 
     void PrepareFloors()
@@ -306,8 +323,8 @@ public class SmokeLayerController : MonoBehaviour
         if (floors != null) sorted.AddRange(floors);
         sorted.Sort((a, b) => b.floorY.CompareTo(a.floorY)); // 上の階から
         int n = sorted.Count;
-        if (fLayerY.Length != n) { fLayerY = new float[n]; fK = new float[n]; fCO = new float[n]; fStarted = new bool[n]; }
-        for (int i = 0; i < n; i++) { fLayerY[i] = sorted[i].ceilingY; fK[i] = 0f; fCO[i] = 0f; fStarted[i] = false; }
+        if (fLayerY.Length != n) { fLayerY = new float[n]; fK = new float[n]; fCO = new float[n]; fStarted = new bool[n]; fElapsed = new float[n]; }
+        for (int i = 0; i < n; i++) { fLayerY[i] = sorted[i].ceilingY; fK[i] = 0f; fCO[i] = 0f; fStarted[i] = false; fElapsed[i] = 0f; }
     }
 
     void AdvanceFloorByFloor(float tt)
@@ -322,12 +339,13 @@ public class SmokeLayerController : MonoBehaviour
             float u = (tt - start) / dur;
             if (tt < start || tt < 0f)
             {
-                fStarted[i] = false; fLayerY[i] = f.ceilingY; fK[i] = 0f; fCO[i] = 0f;
+                fStarted[i] = false; fLayerY[i] = f.ceilingY; fK[i] = 0f; fCO[i] = 0f; fElapsed[i] = 0f;
             }
             else
             {
                 float prog = Mathf.Clamp01(fillCurve != null && fillCurve.length > 0 ? fillCurve.Evaluate(Mathf.Clamp01(u)) : Mathf.Clamp01(u));
                 fStarted[i] = true;
+                fElapsed[i] = tt - start;
                 fLayerY[i] = Mathf.Lerp(f.ceilingY, Mathf.Min(f.ceilingY, f.floorY + minU), prog);
                 float dens = Mathf.Lerp(initialDensity, 1f, prog);
                 fK[i] = linearExtinction * dens;
@@ -368,12 +386,98 @@ public class SmokeLayerController : MonoBehaviour
     /// <summary>位置 p での煙層の下端の高さ（ワールド Y）。その階に煙が無ければ天井の高さ</summary>
     public float LayerYAt(Vector3 p)
     {
-        if (mode != Mode.FloorByFloor) return LayerY;
-        int i = FloorIndexAt(p.y);
-        return i >= 0 ? fLayerY[i] : LayerY;
+        float baseLayer, ceil, elapsed;
+        if (!LayerInfoAt(p.y, out baseLayer, out ceil, out _, out _, out elapsed)) return mode == Mode.FloorByFloor ? CeilingYAt(p.y) : LayerY;
+        if (spatialSpread) { Spread(p, elapsed, ceil, ref baseLayer, out _); }
+        return baseLayer;
+    }
+
+    /// <summary>高さ y の煙層の情報（下端・天井・濃さ・CO・経過時間）。煙が無ければ false</summary>
+    bool LayerInfoAt(float y, out float layerY, out float ceilY, out float k, out float co, out float elapsed)
+    {
+        layerY = ceilY = k = co = elapsed = 0f;
+        if (!smokeEnabled) return false;
+        if (mode == Mode.FloorByFloor && sorted.Count > 0)
+        {
+            int i = FloorIndexAt(y);
+            if (i < 0 || !fStarted[i]) return false;
+            layerY = fLayerY[i]; ceilY = sorted[i].ceilingY; k = fK[i]; co = fCO[i]; elapsed = fElapsed[i];
+            return true;
+        }
+        if (ExtinctionUpper <= 0f) return false;
+        layerY = LayerY; ceilY = floorY + ceilingHeight; k = ExtinctionUpper; co = COppmUpper; elapsed = singleElapsed;
+        return true;
+    }
+
+    /// <summary>煙の先端の半径 [m]（火元からの水平距離）</summary>
+    public float FrontRadiusM(float elapsed) => Mathf.Max(0f, elapsed) * frontSpeedMps;
+
+    public Vector3 OriginPosition => smokeOrigin != null ? smokeOrigin.position : transform.position;
+
+    // 火元からの距離による「煙がもう来ているか（front 0〜1）」と「先端付近ほど薄い層（layer を上げる）」
+    void Spread(Vector3 p, float elapsed, float ceil, ref float layer, out float front)
+    {
+        float frontM = FrontRadiusM(elapsed);
+        Vector3 o = OriginPosition;
+        float dM = new Vector2(p.x - o.x, p.z - o.z).magnitude / Upm;
+        front = Mathf.Clamp01((frontM - dM) / Mathf.Max(0.5f, frontM * 0.15f));
+        layer = Mathf.Min(layer + taperM * Upm * Mathf.Clamp01(dM / Mathf.Max(0.01f, frontM)), ceil);
+    }
+
+    /// <summary>位置 p の 減光係数・CO・煙層の中か を、場所による広がりも含めて計算</summary>
+    void Eval(Vector3 p, out float k, out float co, out float w)
+    {
+        k = co = w = 0f;
+        if (!InsideRegions(p)) return;
+        if (!LayerInfoAt(p.y, out float layer, out float ceil, out float kU, out float coU, out float elapsed)) return;
+        float front = 1f;
+        if (spatialSpread) Spread(p, elapsed, ceil, ref layer, out front);
+        if (front <= 0f) return;
+        float b = interfaceBlend * Upm;
+        float ww = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(layer - b, layer + b, p.y));
+        k = front * Mathf.Lerp(kU * lowerLayerLeak, kU, ww);
+        co = front * Mathf.Lerp(coU * lowerLayerLeak, coU, ww);
+        w = front * ww;
+    }
+
+    /// <summary>見た目用：i 番目の煙層の、火元の位置と先端の半径 [m]</summary>
+    public void GetSpread(int i, out Vector3 origin, out float frontM)
+    {
+        origin = OriginPosition;
+        float el = (mode == Mode.FloorByFloor && i >= 0 && i < fElapsed.Length) ? fElapsed[i] : singleElapsed;
+        frontM = spatialSpread ? FrontRadiusM(el) : 1e6f;
     }
 
     /// <summary>その高さ（ワールド Y）の真下にある階の床の高さ。床からの頭の高さを出すのに使う</summary>
+    /// <summary>見た目用：煙層の数（FloorByFloor なら階の数、それ以外は 1）</summary>
+    public int VisualLayerCount => mode == Mode.FloorByFloor && sorted.Count > 0 ? sorted.Count : 1;
+
+    /// <summary>見た目用：i 番目の煙層の 天井・下端の高さ（ワールド Y）・減光係数・表示するか</summary>
+    public void GetVisualLayer(int i, out float ceilingY, out float layerY, out float k, out bool active)
+    {
+        if (mode == Mode.FloorByFloor && sorted.Count > 0 && i >= 0 && i < sorted.Count)
+        {
+            ceilingY = sorted[i].ceilingY; layerY = fLayerY[i]; k = fK[i];
+            active = smokeEnabled && fStarted[i] && fK[i] > 0.01f;
+        }
+        else
+        {
+            ceilingY = floorY + ceilingHeight; layerY = LayerY; k = ExtinctionUpper;
+            active = smokeEnabled && ExtinctionUpper > 0.01f && ceilingY - layerY > 0.01f;
+        }
+    }
+
+    /// <summary>高さ y のすぐ上にある天井の高さ（ワールド Y）</summary>
+    public float CeilingYAt(float worldY)
+    {
+        if (mode == Mode.FloorByFloor && sorted.Count > 0)
+        {
+            int i = FloorIndexAt(worldY);
+            if (i >= 0) return sorted[i].ceilingY;
+        }
+        return floorY + ceilingHeight;
+    }
+
     public float LocalFloorY(float worldY)
     {
         float best = floorY;
@@ -394,11 +498,11 @@ public class SmokeLayerController : MonoBehaviour
     }
 
     /// <summary>位置 p での減光係数 [1/m]（建物の外なら 0）</summary>
-    public float ExtinctionAt(Vector3 p) => InsideRegions(p) ? ExtinctionAt(p.y) : 0f;
+    public float ExtinctionAt(Vector3 p) { Eval(p, out float k, out _, out _); return k; }
     /// <summary>位置 p での CO 濃度 [ppm]（建物の外なら 0）</summary>
-    public float COAt(Vector3 p) => InsideRegions(p) ? COAt(p.y) : 0f;
+    public float COAt(Vector3 p) { Eval(p, out _, out float co, out _); return co; }
     /// <summary>位置 p が煙層の中か（0〜1、建物の外なら 0）</summary>
-    public float UpperWeight(Vector3 p) => InsideRegions(p) ? UpperWeight(p.y) : 0f;
+    public float UpperWeight(Vector3 p) { Eval(p, out _, out _, out float w); return w; }
 
     /// <summary>高さ y（ワールド）での減光係数 [1/m]。境目はなめらかにつなぐ</summary>
     public float ExtinctionAt(float worldY)
@@ -449,6 +553,11 @@ public class SmokeLayerController : MonoBehaviour
     void RefreshFloorVolumes()
     {
         foreach (var r in regions) if (r.volume != null) r.volume.gameObject.SetActive(false);
+        if (!useBoxVolumes)
+        {
+            foreach (var kv in floorVolumes) if (kv.Value != null) kv.Value.gameObject.SetActive(false);
+            return;
+        }
         if (interfaceParticles != null) { var em0 = interfaceParticles.emission; em0.enabled = false; }
         for (int ri = 0; ri < regions.Count; ri++)
         {
@@ -511,7 +620,8 @@ public class SmokeLayerController : MonoBehaviour
         }
         // 煙層の箱
         float thickness = Mathf.Max(0.001f, ceilingHeight - LayerHeightAboveFloor);
-        bool show = smokeEnabled && ExtinctionUpper > 0.01f && thickness > 0.02f;
+        bool smokeShown = smokeEnabled && ExtinctionUpper > 0.01f && thickness > 0.02f;
+        bool show = smokeShown && useBoxVolumes;
         float alpha = 1f - Mathf.Exp(-ExtinctionUpper * 1.5f); // 1.5m 先を見たときの不透明度の目安
         foreach (var r in regions)
         {
@@ -538,7 +648,7 @@ public class SmokeLayerController : MonoBehaviour
             var p = interfaceParticles.transform.position;
             interfaceParticles.transform.position = new Vector3(p.x, LayerY, p.z);
             var em = interfaceParticles.emission;
-            em.enabled = show;
+            em.enabled = smokeShown;
         }
 
         ApplyFog();
@@ -548,6 +658,8 @@ public class SmokeLayerController : MonoBehaviour
     {
         // 霧（頭の位置の煙の濃さ）
         float k = viewer != null ? ExtinctionAt(viewer.position) : 0f;
+        // 立体の霧が煙層の中を描いているときは、霧は「煙層の下の薄い煙」分だけにする（二重がけ防止）
+        if (volumeVisualActive && viewer != null) k = Mathf.Lerp(k, k * lowerLayerLeak, UpperWeight(viewer.position));
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.Exponential;
         RenderSettings.fogColor = Color.Lerp(new Color(0.25f, 0.25f, 0.27f), smokeColor, Mathf.Clamp01(k));

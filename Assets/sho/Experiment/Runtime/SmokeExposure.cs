@@ -28,7 +28,7 @@ public class SmokeExposure : MonoBehaviour, IEvacLogColumns
     [Tooltip("頭（カメラ / CenterEyeAnchor）")]
     public Transform head;
     [Tooltip("移動速度を落とす対象（PC用の移動スクリプト）。VR 移動では未設定でよい")]
-    public PlayerMovements movements;
+    public Sho_PlayerMovements movements;
     [Tooltip("視界の周りを暗くするビネットの板（カメラの子）")]
     public Renderer overlay;
     [Tooltip("まばたき・暗転用の黒い板（カメラの子）")]
@@ -93,7 +93,7 @@ public class SmokeExposure : MonoBehaviour, IEvacLogColumns
     {
         if (head == null && Camera.main != null) head = Camera.main.transform;
         if (smoke == null) smoke = FindAnyObjectByType<SmokeLayerController>();
-        if (movements == null) movements = GetComponent<PlayerMovements>();
+        if (movements == null) movements = GetComponent<Sho_PlayerMovements>();
         if (movements != null) { baseWalk = movements.walkSpeed; baseFast = movements.fastSpeed; baseCrouch = movements.crouchSpeed; }
         if (coughSource == null)
         {
@@ -274,7 +274,7 @@ public class SmokeExposure : MonoBehaviour, IEvacLogColumns
 
     void LogEvent(string ev, string detail)
     {
-        if (EvacuationTrajectoryLogger.Instance != null) EvacuationTrajectoryLogger.Instance.LogEvent(ev, "player", detail);
+        if (Sho_EvacuationTrajectoryLogger.Instance != null) Sho_EvacuationTrajectoryLogger.Instance.LogEvent(ev, "player", detail);
     }
 
     // ---- ログの追加列 ----
