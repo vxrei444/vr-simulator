@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class PlayerDirectionLogger : MonoBehaviour
@@ -5,20 +6,20 @@ public class PlayerDirectionLogger : MonoBehaviour
     [Header("観測判定設定")]
     [SerializeField] private string targetTag = "GazeTarget";
 
-    // 連続して観測する必要がある時間
+    // 連続して観測する必要がある時間(秒)
     [SerializeField] private float requiredGazeTime = 3.0f;
 
     [Header("視界・Ray設定")]
     [SerializeField] private float rayDistance = 10.0f;
 
-    // 画面中央の検出範囲
+    // 視線の太さ(球の半径)
     [SerializeField] private float detectionRadius = 0.15f;
 
+    // 視線を遮る対象にするレイヤー(通常は Everything)
+    [SerializeField] private LayerMask raycastMask = ~0;
+
     private Transform currentTarget;
-
     private float gazeStartTime;
-
-    [Header("内部状態")]
     private bool hasLogged = false;
 
     void Update()
@@ -26,48 +27,24 @@ public class PlayerDirectionLogger : MonoBehaviour
         CheckGazeTarget();
     }
 
-    // 画面中央付近に対象物があるか確認
+    void OnDisable()
+    {
+        // 観測中に停止した場合も終了ログを出す
+        if (currentTarget != null)
+        {
+            EndObservation();
+            currentTarget = null;
+        }
+    }
+
+    // 正面方向に対象物があるか確認
     void CheckGazeTarget()
     {
-        Transform hitTarget = null;
+        Transform hitTarget = FindGazeTarget();
 
-        // 画面中央から少し範囲を持たせてRayを飛ばす
-        Ray ray = new Ray(transform.position, transform.forward);
-
-        RaycastHit[] hits = Physics.SphereCastAll(
-            ray,
-            detectionRadius,
-            rayDistance
-        );
-
-        // 最も近い対象Tagのオブジェクトを取得
-        float nearestDistance = float.MaxValue;
-
-        foreach (RaycastHit hit in hits)
-        {
-            Transform target = hit.collider.transform;
-
-            while (target != null)
-            {
-                if (target.CompareTag(targetTag))
-                {
-                    if (hit.distance < nearestDistance)
-                    {
-                        nearestDistance = hit.distance;
-                        hitTarget = target;
-                    }
-
-                    break;
-                }
-
-                target = target.parent;
-            }
-        }
-
-        // 観測対象が切り替わった場合
+        // 観測対象が切り替わった場合(視界から外れた場合を含む)
         if (hitTarget != currentTarget)
         {
-            // 前の対象の観測を終了
             if (currentTarget != null)
             {
                 EndObservation();
@@ -75,28 +52,22 @@ public class PlayerDirectionLogger : MonoBehaviour
 
             currentTarget = hitTarget;
 
-            // 新しい対象の観測開始
             if (currentTarget != null)
             {
                 gazeStartTime = Time.time;
                 hasLogged = false;
-
-                Debug.Log(
-                    "観測開始: " + currentTarget.name
-                );
+                Debug.Log("観測開始: " + currentTarget.name);
             }
         }
 
-        // 対象が視界から外れた場合
         if (currentTarget == null)
         {
             return;
         }
 
-        // 観測時間を計算
+        // 連続観測時間を計算
         float gazeDuration = Time.time - gazeStartTime;
 
-        // 3秒以上連続して観測した場合
         if (gazeDuration >= requiredGazeTime && !hasLogged)
         {
             RecordObservation(gazeDuration);
@@ -104,30 +75,77 @@ public class PlayerDirectionLogger : MonoBehaviour
         }
     }
 
+    // 視線上で最初に当たったものが対象タグなら、それを返す
+    Transform FindGazeTarget()
+    {
+        Ray ray = new Ray(transform.position, transform.forward);
+
+        RaycastHit[] hits = Physics.SphereCastAll(
+            ray,
+            detectionRadius,
+            rayDistance,
+            raycastMask,
+            QueryTriggerInteraction.Ignore
+        );
+
+        // 近い順に並べる
+        Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        foreach (RaycastHit hit in hits)
+        {
+            Transform hitTransform = hit.collider.transform;
+
+            // 自分自身(プレイヤー)の階層は無視する
+            if (hitTransform.IsChildOf(transform))
+            {
+                continue;
+            }
+
+            // 最初に当たったものだけで判定する(遮蔽を考慮)
+            return FindTaggedParent(hitTransform);
+        }
+
+        return null;
+    }
+
+    // 自分または親をたどって、対象タグを持つTransformを探す
+    Transform FindTaggedParent(Transform t)
+    {
+        while (t != null)
+        {
+            if (t.CompareTag(targetTag))
+            {
+                return t;
+            }
+            t = t.parent;
+        }
+        return null;
+    }
+
     // 観測終了時の処理
     void EndObservation()
     {
+        // 対象が破棄されている場合の安全対策
+        string targetName = currentTarget != null ? currentTarget.name : "(破棄済み)";
         float duration = Time.time - gazeStartTime;
 
         if (duration < requiredGazeTime)
         {
             Debug.Log(
-                "観測終了（記録条件未達）: " +
-                currentTarget.name +
-                " / " +
-                duration.ToString("F2") + "秒"
+                "観測終了(記録条件未達): " + targetName +
+                " / " + duration.ToString("F2") + "秒"
             );
         }
         else
         {
             Debug.Log(
-                "観測終了: " + currentTarget.name +
+                "観測終了: " + targetName +
                 " / " + duration.ToString("F2") + "秒"
             );
         }
     }
 
-    // ログ出力
+    // 条件達成時のログ出力
     void RecordObservation(float duration)
     {
         Vector3 objectPosition = currentTarget.position;
