@@ -24078,7 +24078,7 @@ MonoBehaviour:
   runWithoutSession: 0
   floorY: 0.5
   ceilingHeight: 38.699997
-  minLayerHeight: 0.9
+  minLayerHeight: 0.6
   regions:
   - name: buildings-right
     centerXZ: {x: -15.094063, y: 10.509979}
@@ -24151,7 +24151,7 @@ MonoBehaviour:
   smokeColor: {r: 0.16981131, g: 0.16244213, b: 0.15752935, a: 1}
   fogScale: 0.55
   interfaceBlend: 0.2
-  baseFogDensity: 0.35
+  baseFogDensity: 1.4
   viewer: {fileID: 1916990906}
   interfaceParticles: {fileID: 0}
 --- !u!4 &1269005773
