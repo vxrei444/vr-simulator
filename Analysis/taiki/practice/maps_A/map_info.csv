@@ -1,0 +1,4 @@
+floor,file,x_min,x_max,z_min,z_max,floor_y
+1F,map_1F.png,-230,70,-60,60,0
+2F,map_2F.png,-230,70,-60,60,13
+3F,map_3F.png,-230,70,-60,60,26
